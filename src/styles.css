@@ -285,6 +285,7 @@ h1 {
 }
 
 
+.notice {
   margin-bottom: 18px;
   padding: 14px 16px;
   color: var(--warning);
@@ -494,7 +495,7 @@ h1 {
   text-align: center;
 }
 
-  @media (max-width: 900px) {
+@media (max-width: 900px) {
   .live-teams {
     grid-template-columns: 1fr;
     gap: 10px;
