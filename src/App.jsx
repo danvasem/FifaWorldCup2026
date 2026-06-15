@@ -1,4 +1,4 @@
-import { CalendarDays, MapPin, RefreshCw, Trophy } from "lucide-react";
+import { CalendarDays, MapPin, Radio, RefreshCw, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   fetchWorldCupMatches,
@@ -10,6 +10,7 @@ import {
   formatBrowserDateTime,
   formatScore,
   formatVenueDateTime,
+  MATCH_STATUS,
   splitMatches,
 } from "./utils/matches";
 
@@ -74,7 +75,15 @@ function App() {
   }, []);
 
   const { completed, upcoming } = useMemo(() => splitMatches(matches), [matches]);
+  const liveMatch = useMemo(() => matches.find((m) => m.status === MATCH_STATUS.LIVE) ?? null, [matches]);
   const formattedRefreshedAt = refreshedAt ? formatBrowserDateTime(refreshedAt) : "Not refreshed yet";
+
+  // Poll every 30s while a match is live
+  useEffect(() => {
+    if (!liveMatch) return;
+    const interval = setInterval(() => loadMatches({ silent: true }), 30_000);
+    return () => clearInterval(interval);
+  }, [liveMatch]);
 
   return (
     <main className="shell">
@@ -106,6 +115,8 @@ function App() {
           </button>
         </div>
       </header>
+
+      {liveMatch && <LiveBanner match={liveMatch} />}
 
       <section className="summary-strip" aria-label="Data summary">
         <div>
@@ -146,6 +157,32 @@ function App() {
         />
       </div>
     </main>
+  );
+}
+
+function LiveBanner({ match }) {
+  return (
+    <section className="live-banner" aria-label="Match in progress">
+      <div className="live-badge">
+        <Radio size={14} aria-hidden="true" />
+        LIVE
+      </div>
+      <div className="live-teams">
+        <div className="live-team">
+          {match.home.flagUrl && <img src={match.home.flagUrl} alt="" loading="lazy" />}
+          <span>{match.home.name}</span>
+        </div>
+        <div className="live-score-block">
+          <span className="live-score">{match.score.home ?? 0} – {match.score.away ?? 0}</span>
+          {match.matchTime && <span className="live-time">{match.matchTime}</span>}
+        </div>
+        <div className="live-team live-team--right">
+          {match.away.flagUrl && <img src={match.away.flagUrl} alt="" loading="lazy" />}
+          <span>{match.away.name}</span>
+        </div>
+      </div>
+      <div className="live-meta">{match.city} · {match.stadium}</div>
+    </section>
   );
 }
 

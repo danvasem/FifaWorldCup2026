@@ -1,6 +1,7 @@
 export const MATCH_STATUS = {
   COMPLETED: 0,
   SCHEDULED: 1,
+  LIVE: 3,
 };
 
 const hasScore = (value) => Number.isFinite(value);
@@ -68,6 +69,7 @@ export function normalizeMatch(match) {
     venueLocalKickoff: match.LocalDate || "",
     status,
     isCompleted,
+    matchTime: match.MatchTime || "",
     home: normalizeTeam(match.Home, match.PlaceHolderA || "Home"),
     away: normalizeTeam(match.Away, match.PlaceHolderB || "Away"),
     score: {
@@ -85,6 +87,7 @@ export function splitMatches(matches, now = new Date()) {
   const nowTime = now.getTime();
 
   const completed = matches
+    .filter((match) => match.status !== MATCH_STATUS.LIVE)
     .filter((match) => match.isCompleted || Date.parse(match.kickoffUtc) < nowTime)
     .filter((match) => hasScore(match.score.home) && hasScore(match.score.away))
     .sort((a, b) => Date.parse(b.kickoffUtc) - Date.parse(a.kickoffUtc))
