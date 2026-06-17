@@ -279,6 +279,41 @@ h1 {
   font-weight: 750;
 }
 
+.live-goals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.live-goals-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #d4f5e6;
+}
+
+.live-goals-list--away {
+  text-align: right;
+}
+
+.live-goal-player {
+  font-weight: 700;
+  color: #fff;
+}
+
+.live-goal-minute {
+  color: #86efac;
+  font-size: 0.75rem;
+}
+
 .live-meta {
   color: #a7d8c0;
   font-size: 0.82rem;
@@ -304,6 +339,33 @@ h1 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+
+.tab-bar {
+  display: none;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 16px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.tab-btn--active {
+  color: var(--pitch);
+  border-bottom-color: var(--pitch);
+}
+
+.tab-btn:hover:not(.tab-btn--active) {
+  color: var(--ink);
 }
 
 .match-section {
@@ -444,12 +506,37 @@ h1 {
   white-space: nowrap;
 }
 
-.match-meta {
+.goals-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.goals-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+}
+
+.goals-list--away {
+  text-align: right;
+}
+
+.goal-player {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.goal-minute {
   color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .match-meta span {
@@ -522,6 +609,23 @@ h1 {
   .summary-strip,
   .match-columns {
     grid-template-columns: 1fr;
+  }
+
+  .tab-bar {
+    display: flex;
+    grid-column: 1 / -1;
+    background: var(--panel-strong);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .match-columns[data-active-tab="results"] .match-section:nth-of-type(2) {
+    display: none;
+  }
+
+  .match-columns[data-active-tab="schedule"] .match-section:nth-of-type(1) {
+    display: none;
   }
 }
 

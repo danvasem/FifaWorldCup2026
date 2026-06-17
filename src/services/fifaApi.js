@@ -3,6 +3,9 @@ import { normalizeMatch } from "../utils/matches";
 export const FIFA_MATCHES_URL =
   "https://api.fifa.com/api/v3/calendar/matches?language=en&count=200&idCompetition=17&idSeason=285023";
 
+export const fifaTimelineUrl = (idMatch) =>
+  `https://api.fifa.com/api/v3/timelines/${idMatch}/?language=en`;
+
 export const CACHE_KEY = "world-cup-2026-match-cache";
 
 export async function fetchWorldCupMatches() {
@@ -23,6 +26,19 @@ export async function fetchWorldCupMatches() {
   }
 
   return payload.Results.map(normalizeMatch).filter(Boolean);
+}
+
+export async function fetchMatchTimeline(idMatch) {
+  const response = await fetch(fifaTimelineUrl(idMatch), {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Timeline fetch failed for match ${idMatch}`);
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload.Event) ? payload.Event : [];
 }
 
 export function readCachedMatches() {

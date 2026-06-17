@@ -47,6 +47,7 @@ const normalizeTeam = (team, fallback) => ({
   name: team?.ShortClubName || getLocalizedText(team?.TeamName, fallback),
   code: team?.Abbreviation || "",
   flagUrl: normalizeFlagUrl(team?.Abbreviation),
+  idTeam: team?.IdTeam || "",
 });
 
 export function normalizeMatch(match) {
@@ -150,4 +151,32 @@ export function formatScore(match) {
   }
 
   return `${home}-${away}`;
+}
+
+const GOAL_EVENT_TYPE = 0;
+
+const extractPlayerName = (description) => {
+  // "Julian QUINONES (Mexico) scores!!" → "Julian QUINONES"
+  const match = description.match(/^(.+?)\s*\(/);
+  return match ? match[1].trim() : description;
+};
+
+export function parseGoalsFromTimeline(events, homeTeamId, awayTeamId) {
+  const home = [];
+  const away = [];
+
+  for (const event of events) {
+    if (event.Type !== GOAL_EVENT_TYPE) continue;
+    const desc = event.EventDescription?.[0]?.Description || "";
+    const player = extractPlayerName(desc);
+    const minute = event.MatchMinute || "";
+
+    if (event.IdTeam === homeTeamId) {
+      home.push({ player, minute });
+    } else if (event.IdTeam === awayTeamId) {
+      away.push({ player, minute });
+    }
+  }
+
+  return { home, away };
 }

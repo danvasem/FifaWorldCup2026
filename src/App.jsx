@@ -1,6 +1,7 @@
 import { CalendarDays, MapPin, Radio, RefreshCw, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  fetchMatchTimeline,
   fetchWorldCupMatches,
   FIFA_MATCHES_URL,
   readCachedMatches,
@@ -11,6 +12,7 @@ import {
   formatScore,
   formatVenueDateTime,
   MATCH_STATUS,
+  parseGoalsFromTimeline,
   splitMatches,
 } from "./utils/matches";
 
@@ -26,6 +28,8 @@ function App() {
   const [status, setStatus] = useState("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [refreshedAt, setRefreshedAt] = useState("");
+  const [activeTab, setActiveTab] = useState("results");
+  const [timelines, setTimelines] = useState({});
 
   const loadMatches = async ({ silent = false } = {}) => {
     if (!silent) {
@@ -85,6 +89,28 @@ function App() {
     return () => clearInterval(interval);
   }, [liveMatch]);
 
+  // Fetch goal timelines for completed + live matches (skip already-loaded ones)
+  useEffect(() => {
+    const relevant = [...completed, ...(liveMatch ? [liveMatch] : [])];
+    if (!relevant.length) return;
+    const missing = relevant.filter((m) => !timelines[m.id]);
+    if (!missing.length) return;
+
+    Promise.all(
+      missing.map(async (match) => {
+        try {
+          const events = await fetchMatchTimeline(match.id);
+          const goals = parseGoalsFromTimeline(events, match.home.idTeam, match.away.idTeam);
+          return [match.id, goals];
+        } catch {
+          return [match.id, { home: [], away: [] }];
+        }
+      })
+    ).then((entries) => {
+      setTimelines((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    });
+  }, [completed, liveMatch]);
+
   return (
     <main className="shell">
       <header className="page-header">
@@ -116,7 +142,7 @@ function App() {
         </div>
       </header>
 
-      {liveMatch && <LiveBanner match={liveMatch} />}
+      {liveMatch && <LiveBanner match={liveMatch} goals={timelines[liveMatch.id]} />}
 
       <section className="summary-strip" aria-label="Data summary">
         <div>
@@ -140,11 +166,30 @@ function App() {
         </section>
       ) : null}
 
-      <div className="match-columns">
+      <div className="match-columns" data-active-tab={activeTab}>
+        <div className="tab-bar" role="tablist" aria-label="Match sections">
+          <button
+            role="tab"
+            aria-selected={activeTab === "results"}
+            className={`tab-btn${activeTab === "results" ? " tab-btn--active" : ""}`}
+            onClick={() => setActiveTab("results")}
+          >
+            Last 5 Results
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === "schedule"}
+            className={`tab-btn${activeTab === "schedule" ? " tab-btn--active" : ""}`}
+            onClick={() => setActiveTab("schedule")}
+          >
+            Next 5 Matches
+          </button>
+        </div>
         <MatchSection
           title="Last 5 Results"
           description="Completed matches, newest first."
           matches={completed}
+          timelines={timelines}
           emptyMessage={status === "loading" ? "Loading results..." : "No completed matches available yet."}
           variant="results"
         />
@@ -152,6 +197,7 @@ function App() {
           title="Next 5 Matches"
           description="Scheduled matches, soonest first."
           matches={upcoming}
+          timelines={{}}
           emptyMessage={status === "loading" ? "Loading fixtures..." : "No upcoming matches available."}
           variant="schedule"
         />
@@ -160,7 +206,7 @@ function App() {
   );
 }
 
-function LiveBanner({ match }) {
+function LiveBanner({ match, goals }) {
   return (
     <section className="live-banner" aria-label="Match in progress">
       <div className="live-badge">
@@ -181,12 +227,28 @@ function LiveBanner({ match }) {
           <span>{match.away.name}</span>
         </div>
       </div>
+
+      {goals && (goals.home.length > 0 || goals.away.length > 0) && (
+        <div className="live-goals">
+          <ul className="live-goals-list live-goals-list--home">
+            {goals.home.map((g, i) => (
+              <li key={i}>⚽ <span className="live-goal-player">{g.player}</span> <span className="live-goal-minute">{g.minute}</span></li>
+            ))}
+          </ul>
+          <ul className="live-goals-list live-goals-list--away">
+            {goals.away.map((g, i) => (
+              <li key={i}><span className="live-goal-minute">{g.minute}</span> <span className="live-goal-player">{g.player}</span> ⚽</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="live-meta">{match.city} · {match.stadium}</div>
     </section>
   );
 }
 
-function MatchSection({ title, description, matches, emptyMessage, variant }) {
+function MatchSection({ title, description, matches, timelines, emptyMessage, variant }) {
   return (
     <section className="match-section" aria-labelledby={`${variant}-title`}>
       <div className="section-heading">
@@ -199,7 +261,9 @@ function MatchSection({ title, description, matches, emptyMessage, variant }) {
 
       <div className="match-list">
         {matches.length ? (
-          matches.map((match) => <MatchRow key={match.id} match={match} variant={variant} />)
+          matches.map((match) => (
+            <MatchRow key={match.id} match={match} goals={timelines[match.id]} variant={variant} />
+          ))
         ) : (
           <div className="empty-state">{emptyMessage}</div>
         )}
@@ -208,7 +272,7 @@ function MatchSection({ title, description, matches, emptyMessage, variant }) {
   );
 }
 
-function MatchRow({ match, variant }) {
+function MatchRow({ match, goals, variant }) {
   return (
     <article className={`match-row match-row--${variant}`}>
       <div className="match-main">
@@ -219,6 +283,21 @@ function MatchRow({ match, variant }) {
         </div>
         <Team team={match.away} align="right" />
       </div>
+
+      {goals && (goals.home.length > 0 || goals.away.length > 0) && (
+        <div className="goals-row">
+          <ul className="goals-list goals-list--home">
+            {goals.home.map((g, i) => (
+              <li key={i}>⚽ <span className="goal-player">{g.player}</span> <span className="goal-minute">{g.minute}</span></li>
+            ))}
+          </ul>
+          <ul className="goals-list goals-list--away">
+            {goals.away.map((g, i) => (
+              <li key={i}><span className="goal-minute">{g.minute}</span> <span className="goal-player">{g.player}</span> ⚽</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="match-meta">
         <span>
