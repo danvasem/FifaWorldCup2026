@@ -154,6 +154,8 @@ export function formatScore(match) {
 }
 
 const GOAL_EVENT_TYPE = 0;
+const PENALTY_GOAL_EVENT_TYPE = 41;
+const OWN_GOAL_EVENT_TYPE = 34;
 
 const extractPlayerName = (description) => {
   // "Julian QUINONES (Mexico) scores!!" → "Julian QUINONES"
@@ -166,15 +168,28 @@ export function parseGoalsFromTimeline(events, homeTeamId, awayTeamId) {
   const away = [];
 
   for (const event of events) {
-    if (event.Type !== GOAL_EVENT_TYPE) continue;
+    const isGoal = event.Type === GOAL_EVENT_TYPE || event.Type === PENALTY_GOAL_EVENT_TYPE;
+    const isOwnGoal = event.Type === OWN_GOAL_EVENT_TYPE;
+    if (!isGoal && !isOwnGoal) continue;
+
     const desc = event.EventDescription?.[0]?.Description || "";
     const player = extractPlayerName(desc);
     const minute = event.MatchMinute || "";
+    const label = isOwnGoal ? `${player} (OG)` : event.Type === PENALTY_GOAL_EVENT_TYPE ? `${player} (P)` : player;
 
-    if (event.IdTeam === homeTeamId) {
-      home.push({ player, minute });
-    } else if (event.IdTeam === awayTeamId) {
-      away.push({ player, minute });
+    if (isOwnGoal) {
+      // Own goal: IdTeam is the team that scored it — credit goes to the opponent
+      if (event.IdTeam === homeTeamId) {
+        away.push({ player: label, minute });
+      } else if (event.IdTeam === awayTeamId) {
+        home.push({ player: label, minute });
+      }
+    } else {
+      if (event.IdTeam === homeTeamId) {
+        home.push({ player: label, minute });
+      } else if (event.IdTeam === awayTeamId) {
+        away.push({ player: label, minute });
+      }
     }
   }
 
