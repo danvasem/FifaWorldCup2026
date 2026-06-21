@@ -867,13 +867,42 @@ h1 {
     grid-template-columns: 1fr;
   }
 
-  /* Hide GF / GA / GD on mobile to make room for the Form column */
-  .group-table th:nth-child(7),
-  .group-table th:nth-child(8),
-  .group-table th:nth-child(9),
-  .group-table td:nth-child(7),
-  .group-table td:nth-child(8),
-  .group-table td:nth-child(9) {
-    display: none;
+  /* Compact everything so all columns fit on mobile */
+  .group-table table {
+    font-size: 0.67rem;
+  }
+
+  .group-table col.col-pos  { width: 18px; }
+  .group-table col.col-stat { width: 20px; }
+  .group-table col.col-pts  { width: 26px; }
+  .group-table col.col-form { width: 34px; }
+
+  .group-table thead th,
+  .group-table tbody td {
+    padding: 5px 2px;
+  }
+
+  .group-table thead th.col-team,
+  .group-table tbody td.col-team {
+    padding-left: 6px !important;
+  }
+
+  .team-cell {
+    gap: 4px;
+  }
+
+  .team-cell img {
+    width: 18px;
+    height: 12px;
+    flex: 0 0 18px;
+  }
+
+  .form-dots {
+    gap: 2px;
+  }
+
+  .form-dot {
+    width: 8px;
+    height: 8px;
   }
 }
