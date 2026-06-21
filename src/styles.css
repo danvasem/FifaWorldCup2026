@@ -368,6 +368,44 @@ h1 {
   color: var(--ink);
 }
 
+.section-hidden {
+  display: none !important;
+}
+
+/* Desktop top-level tabs */
+.desktop-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.desktop-tab-btn {
+  padding: 8px 22px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.desktop-tab-btn--active {
+  color: var(--panel-strong);
+  background: var(--pitch);
+}
+
+.desktop-tab-btn:hover:not(.desktop-tab-btn--active) {
+  color: var(--ink);
+  background: #edf2ef;
+}
+
 .match-section {
   min-width: 0;
   background: var(--panel);
@@ -611,15 +649,22 @@ h1 {
     grid-template-columns: 1fr;
   }
 
+  /* Hide desktop tabs on mobile */
+  .desktop-tabs {
+    display: none;
+  }
+
+  /* Mobile tab bar visible */
   .tab-bar {
     display: flex;
-    grid-column: 1 / -1;
     background: var(--panel-strong);
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
+    margin-bottom: 16px;
   }
 
+  /* Hide inactive match section within the columns */
   .match-columns[data-active-tab="results"] .match-section:nth-of-type(2) {
     display: none;
   }
@@ -664,6 +709,161 @@ h1 {
   }
 
   .match-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Group Standings ─────────────────────────────────── */
+
+.groups-section {
+  margin-top: 0;
+}
+
+.groups-title {
+  margin: 0 0 16px;
+  font-size: 1.08rem;
+  letter-spacing: 0;
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.group-table {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.group-name {
+  margin: 0;
+  padding: 12px 14px 10px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.group-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  table-layout: fixed;
+}
+
+/* Fixed column widths — same across every group table */
+.group-table col.col-pos  { width: 26px; }
+.group-table col.col-team { width: auto; }
+.group-table col.col-stat { width: 26px; }
+.group-table col.col-pts  { width: 34px; }
+.group-table col.col-form { width: 58px; }
+
+.group-table thead th {
+  padding: 6px 4px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+
+.group-table thead th.col-team {
+  text-align: left;
+  padding-left: 10px;
+}
+
+.group-table tbody tr {
+  border-bottom: 1px solid var(--line);
+  transition: background 120ms ease;
+}
+
+.group-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.group-table tbody tr:hover {
+  background: #f3faf6;
+}
+
+.group-table tbody td {
+  padding: 7px 4px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.col-pos {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+/* td for team: left-aligned, no flex directly on td */
+.col-team {
+  text-align: left;
+  padding-left: 10px !important;
+}
+
+/* Inner wrapper for flag + name */
+.team-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.team-cell img {
+  width: 22px;
+  height: 15px;
+  flex: 0 0 22px;
+  object-fit: cover;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 2px;
+}
+
+.team-cell span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.col-pts {
+  font-weight: 800;
+  color: var(--pitch-dark);
+}
+
+.col-form {
+  width: 58px;
+}
+
+.form-dots {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+}
+
+.form-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.form-dot--w { background: #22c55e; }
+.form-dot--d { background: #94a3b8; }
+.form-dot--l { background: #ef4444; }
+.form-dot--empty {
+  background: transparent;
+  border: 1.5px solid var(--line);
+}
+
+@media (max-width: 700px) {
+  .groups-grid {
     grid-template-columns: 1fr;
   }
 }
