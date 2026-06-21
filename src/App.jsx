@@ -1,6 +1,7 @@
 import { CalendarDays, MapPin, Radio, RefreshCw, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  fetchGroupStandings,
   fetchMatchTimeline,
   fetchWorldCupMatches,
   FIFA_MATCHES_URL,
@@ -12,6 +13,7 @@ import {
   formatScore,
   formatVenueDateTime,
   MATCH_STATUS,
+  normalizeStandings,
   parseGoalsFromTimeline,
   splitMatches,
 } from "./utils/matches";
@@ -30,6 +32,7 @@ function App() {
   const [refreshedAt, setRefreshedAt] = useState("");
   const [activeTab, setActiveTab] = useState("results");
   const [timelines, setTimelines] = useState({});
+  const [groups, setGroups] = useState(new Map());
 
   const loadMatches = async ({ silent = false } = {}) => {
     if (!silent) {
@@ -111,6 +114,13 @@ function App() {
     });
   }, [completed, liveMatch]);
 
+  // Fetch group standings once on mount
+  useEffect(() => {
+    fetchGroupStandings()
+      .then((results) => setGroups(normalizeStandings(results)))
+      .catch(() => {});
+  }, []);
+
   return (
     <main className="shell">
       <header className="page-header">
@@ -166,25 +176,58 @@ function App() {
         </section>
       ) : null}
 
-      <div className="match-columns" data-active-tab={activeTab}>
-        <div className="tab-bar" role="tablist" aria-label="Match sections">
-          <button
-            role="tab"
-            aria-selected={activeTab === "results"}
-            className={`tab-btn${activeTab === "results" ? " tab-btn--active" : ""}`}
-            onClick={() => setActiveTab("results")}
-          >
-            Last 5 Results
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === "schedule"}
-            className={`tab-btn${activeTab === "schedule" ? " tab-btn--active" : ""}`}
-            onClick={() => setActiveTab("schedule")}
-          >
-            Next 5 Matches
-          </button>
-        </div>
+      {/* Desktop-only top tab bar */}
+      <div className="desktop-tabs" role="tablist" aria-label="Main sections">
+        <button
+          role="tab"
+          aria-selected={activeTab !== "qualification"}
+          className={`desktop-tab-btn${activeTab !== "qualification" ? " desktop-tab-btn--active" : ""}`}
+          onClick={() => setActiveTab((t) => (t === "qualification" ? "results" : t))}
+        >
+          Results
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === "qualification"}
+          className={`desktop-tab-btn${activeTab === "qualification" ? " desktop-tab-btn--active" : ""}`}
+          onClick={() => setActiveTab("qualification")}
+        >
+          Qualification
+        </button>
+      </div>
+
+      {/* Mobile-only tab bar — always visible, lives outside match-columns */}
+      <div className="tab-bar" role="tablist" aria-label="Match sections">
+        <button
+          role="tab"
+          aria-selected={activeTab === "results"}
+          className={`tab-btn${activeTab === "results" ? " tab-btn--active" : ""}`}
+          onClick={() => setActiveTab("results")}
+        >
+          Last 5 Results
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === "schedule"}
+          className={`tab-btn${activeTab === "schedule" ? " tab-btn--active" : ""}`}
+          onClick={() => setActiveTab("schedule")}
+        >
+          Next 5 Matches
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === "qualification"}
+          className={`tab-btn${activeTab === "qualification" ? " tab-btn--active" : ""}`}
+          onClick={() => setActiveTab("qualification")}
+        >
+          Qualification
+        </button>
+      </div>
+
+      <div
+        className={`match-columns${activeTab === "qualification" ? " section-hidden" : ""}`}
+        data-active-tab={activeTab}
+      >
         <MatchSection
           title="Last 5 Results"
           description="Completed matches, newest first."
@@ -202,7 +245,102 @@ function App() {
           variant="schedule"
         />
       </div>
+
+      {groups.size > 0 && (
+        <div className={activeTab !== "qualification" ? "section-hidden" : ""}>
+          <GroupStandings groups={groups} />
+        </div>
+      )}
     </main>
+  );
+}
+
+function GroupStandings({ groups }) {
+  return (
+    <section className="groups-section" aria-label="Group standings">
+      <h2 className="groups-title">Group Standings</h2>
+      <div className="groups-grid">
+        {[...groups.entries()].map(([groupName, teams]) => (
+          <GroupTable key={groupName} groupName={groupName} teams={teams} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const FORM_LABEL = { W: "Win", D: "Draw", L: "Loss" };
+
+function GroupTable({ groupName, teams }) {
+  return (
+    <div className="group-table">
+      <h3 className="group-name">{groupName}</h3>
+      <table>
+        <colgroup>
+          <col className="col-pos" />
+          <col className="col-team" />
+          <col className="col-stat" />
+          <col className="col-stat" />
+          <col className="col-stat" />
+          <col className="col-stat" />
+          <col className="col-stat" />
+          <col className="col-stat" />
+          <col className="col-stat" />
+          <col className="col-pts" />
+          <col className="col-form" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th className="col-pos">#</th>
+            <th className="col-team">Team</th>
+            <th title="Played">P</th>
+            <th title="Won">W</th>
+            <th title="Drawn">D</th>
+            <th title="Lost">L</th>
+            <th title="Goals For">GF</th>
+            <th title="Goals Against">GA</th>
+            <th title="Goal Difference">GD</th>
+            <th className="col-pts" title="Points">Pts</th>
+            <th className="col-form">Form</th>
+          </tr>
+        </thead>
+        <tbody>
+          {teams.map((team) => (
+            <tr key={team.id}>
+              <td className="col-pos">{team.position}</td>
+              <td className="col-team">
+                <div className="team-cell">
+                  {team.flagUrl && <img src={team.flagUrl} alt="" loading="lazy" />}
+                  <span>{team.name}</span>
+                </div>
+              </td>
+              <td>{team.played}</td>
+              <td>{team.won}</td>
+              <td>{team.drawn}</td>
+              <td>{team.lost}</td>
+              <td>{team.goalsFor}</td>
+              <td>{team.goalsAgainst}</td>
+              <td>{team.goalDiff > 0 ? `+${team.goalDiff}` : team.goalDiff}</td>
+              <td className="col-pts">{team.points}</td>
+              <td className="col-form">
+                <span className="form-dots">
+                  {team.form.map((result, i) => (
+                    <span
+                      key={i}
+                      className={`form-dot form-dot--${result.toLowerCase()}`}
+                      aria-label={FORM_LABEL[result]}
+                      title={FORM_LABEL[result]}
+                    />
+                  ))}
+                  {Array.from({ length: Math.max(0, 3 - team.form.length) }).map((_, i) => (
+                    <span key={`empty-${i}`} className="form-dot form-dot--empty" />
+                  ))}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

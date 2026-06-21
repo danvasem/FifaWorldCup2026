@@ -3,6 +3,9 @@ import { normalizeMatch } from "../utils/matches";
 export const FIFA_MATCHES_URL =
   "https://api.fifa.com/api/v3/calendar/matches?language=en&count=200&idCompetition=17&idSeason=285023";
 
+export const FIFA_STANDINGS_URL =
+  "https://api.fifa.com/api/v3/calendar/17/285023/289273/standing?language=en";
+
 export const fifaTimelineUrl = (idMatch) =>
   `https://api.fifa.com/api/v3/timelines/${idMatch}/?language=en`;
 
@@ -39,6 +42,19 @@ export async function fetchMatchTimeline(idMatch) {
 
   const payload = await response.json();
   return Array.isArray(payload.Event) ? payload.Event : [];
+}
+
+export async function fetchGroupStandings() {
+  const response = await fetch(FIFA_STANDINGS_URL, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Standings fetch failed: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload.Results) ? payload.Results : [];
 }
 
 export function readCachedMatches() {

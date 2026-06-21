@@ -195,3 +195,54 @@ export function parseGoalsFromTimeline(events, homeTeamId, awayTeamId) {
 
   return { home, away };
 }
+
+const MATCH_RESULT_COMPLETED = 4;
+
+const deriveForm = (matchResults, idTeam) =>
+  matchResults
+    .filter((mr) => mr.Result === MATCH_RESULT_COMPLETED && mr.HomeTeamScore !== null)
+    .sort((a, b) => new Date(a.StartTime) - new Date(b.StartTime))
+    .slice(-5)
+    .map((mr) => {
+      const isHome = mr.HomeTeamId === idTeam;
+      const scored = isHome ? mr.HomeTeamScore : mr.AwayTeamScore;
+      const conceded = isHome ? mr.AwayTeamScore : mr.HomeTeamScore;
+      if (scored > conceded) return "W";
+      if (scored < conceded) return "L";
+      return "D";
+    });
+
+export function normalizeStandings(results) {
+  const groups = new Map();
+
+  for (const entry of results) {
+    const groupName = entry.Group?.[0]?.Description || "Unknown";
+
+    const team = {
+      id: entry.IdTeam,
+      name: entry.Team?.ShortClubName || entry.Team?.Name?.[0]?.Description || "",
+      code: entry.Team?.Abbreviation || "",
+      flagUrl: normalizeFlagUrl(entry.Team?.Abbreviation),
+      position: entry.Position,
+      played: entry.Played || 0,
+      won: entry.Won || 0,
+      drawn: entry.Drawn || 0,
+      lost: entry.Lost || 0,
+      goalsFor: entry.For || 0,
+      goalsAgainst: entry.Against || 0,
+      goalDiff: entry.GoalsDiference ?? 0,
+      points: entry.Points || 0,
+      form: deriveForm(entry.MatchResults || [], entry.IdTeam),
+    };
+
+    if (!groups.has(groupName)) groups.set(groupName, []);
+    groups.get(groupName).push(team);
+  }
+
+  // Sort teams within each group by position, groups by name
+  for (const teams of groups.values()) {
+    teams.sort((a, b) => a.position - b.position);
+  }
+
+  return new Map([...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+}
