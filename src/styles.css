@@ -866,4 +866,14 @@ h1 {
   .groups-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Hide GF / GA / GD on mobile to make room for the Form column */
+  .group-table th:nth-child(7),
+  .group-table th:nth-child(8),
+  .group-table th:nth-child(9),
+  .group-table td:nth-child(7),
+  .group-table td:nth-child(8),
+  .group-table td:nth-child(9) {
+    display: none;
+  }
 }
