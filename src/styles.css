@@ -869,13 +869,13 @@ h1 {
 
   /* Compact everything so all columns fit on mobile */
   .group-table table {
-    font-size: 0.67rem;
+    font-size: 0.72rem;
   }
 
-  .group-table col.col-pos  { width: 18px; }
-  .group-table col.col-stat { width: 20px; }
-  .group-table col.col-pts  { width: 26px; }
-  .group-table col.col-form { width: 34px; }
+  .group-table col.col-pos  { width: 20px; }
+  .group-table col.col-stat { width: 24px; }
+  .group-table col.col-pts  { width: 30px; }
+  .group-table col.col-form { width: 42px; }
 
   .group-table thead th,
   .group-table tbody td {
@@ -898,11 +898,11 @@ h1 {
   }
 
   .form-dots {
-    gap: 2px;
+    gap: 3px;
   }
 
   .form-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 }
