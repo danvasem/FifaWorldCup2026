@@ -82,19 +82,19 @@ function App() {
   }, []);
 
   const { completed, upcoming } = useMemo(() => splitMatches(matches), [matches]);
-  const liveMatch = useMemo(() => matches.find((m) => m.status === MATCH_STATUS.LIVE) ?? null, [matches]);
+  const liveMatches = useMemo(() => matches.filter((m) => m.status === MATCH_STATUS.LIVE), [matches]);
   const formattedRefreshedAt = refreshedAt ? formatBrowserDateTime(refreshedAt) : "Not refreshed yet";
 
-  // Poll every 30s while a match is live
+  // Poll every 30s while any match is live
   useEffect(() => {
-    if (!liveMatch) return;
+    if (!liveMatches.length) return;
     const interval = setInterval(() => loadMatches({ silent: true }), 30_000);
     return () => clearInterval(interval);
-  }, [liveMatch]);
+  }, [liveMatches.length]);
 
   // Fetch goal timelines for completed + live matches (skip already-loaded ones)
   useEffect(() => {
-    const relevant = [...completed, ...(liveMatch ? [liveMatch] : [])];
+    const relevant = [...completed, ...liveMatches];
     if (!relevant.length) return;
     const missing = relevant.filter((m) => !timelines[m.id]);
     if (!missing.length) return;
@@ -112,7 +112,7 @@ function App() {
     ).then((entries) => {
       setTimelines((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
     });
-  }, [completed, liveMatch]);
+  }, [completed, liveMatches]);
 
   // Fetch group standings once on mount
   useEffect(() => {
@@ -152,7 +152,9 @@ function App() {
         </div>
       </header>
 
-      {liveMatch && <LiveBanner match={liveMatch} goals={timelines[liveMatch.id]} />}
+      {liveMatches.map((m) => (
+        <LiveBanner key={m.id} match={m} goals={timelines[m.id]} />
+      ))}
 
       <section className="summary-strip" aria-label="Data summary">
         <div>
